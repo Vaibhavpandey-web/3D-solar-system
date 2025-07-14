@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Meta settings for responsive layout -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Solar System Simulation</title>
+  
+  <!-- Load THREE.js library -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js"></script>
+  
+  <!-- Load GSAP for animation/tweening -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+</head>
+<body>
+  <!-- UI container for controls -->
+  <div id="controls"></div>
+
+  <script>
+    // === Scene Setup ===
+    const scene = new THREE.Scene();
+
+    // Perspective camera
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    
+    // Renderer configuration
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.body.appendChild(renderer.domElement);
+
+    // Basic styling
+    document.body.style.margin = 0;
+    document.body.style.overflow = 'hidden';
+    document.body.style.backgroundColor = 'black';
+    document.body.style.color = 'white';
+    document.body.style.fontFamily = 'Arial, sans-serif';
+
+    // === Controls Panel ===
+    const controlsPanel = document.getElementById("controls");
+    controlsPanel.style.position = "absolute";
+    controlsPanel.style.top = "10px";
+    controlsPanel.style.left = "10px";
+    controlsPanel.style.background = "rgba(0,0,0,0.6)";
+    controlsPanel.style.padding = "10px";
+    controlsPanel.style.borderRadius = "8px";
+    controlsPanel.style.maxHeight = "90vh";
+    controlsPanel.style.overflowY = "auto";
+    controlsPanel.style.zIndex = 10;
+
+    // Controls Title
+    const title = document.createElement('h3');
+    title.innerText = 'Speed Controls';
+    controlsPanel.appendChild(title);
+
+    // Planet speed sliders container
+    const planetControlsDiv = document.createElement('div');
+    planetControlsDiv.id = 'planetControls';
+    controlsPanel.appendChild(planetControlsDiv);
+
+    // Pause/resume button
+    const pauseButton = document.createElement('button');
+    pauseButton.id = 'togglePause';
+    pauseButton.innerText = 'Pause';
+    pauseButton.style.marginTop = '10px';
+    pauseButton.style.padding = '5px 10px';
+    pauseButton.style.border = 'none';
+    pauseButton.style.borderRadius = '4px';
+    pauseButton.style.backgroundColor = '#ffffff22';
+    pauseButton.style.color = 'white';
+    pauseButton.style.cursor = 'pointer';
+    controlsPanel.appendChild(pauseButton);
+
+    // === Tooltip for Planet Names ===
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    const tooltip = document.createElement('div');
+    tooltip.style.position = 'absolute';
+    tooltip.style.background = '#222';
+    tooltip.style.color = 'white';
+    tooltip.style.padding = '4px 8px';
+    tooltip.style.borderRadius = '4px';
+    tooltip.style.fontSize = '12px';
+    tooltip.style.pointerEvents = 'none';
+    tooltip.style.display = 'none';
+    tooltip.style.zIndex = '20';
+    document.body.appendChild(tooltip);
+
+    // === Background Skybox ===
+    const loader = new THREE.CubeTextureLoader();
+    const texture = loader.load([
+      'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/cube/space/px.jpg',
+      'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/cube/space/nx.jpg',
+      'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/cube/space/py.jpg',
+      'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/cube/space/ny.jpg',
+      'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/cube/space/pz.jpg',
+      'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/cube/space/nz.jpg',
+    ]);
+    scene.background = texture;
+
+    // === Starfield Creation ===
+    function createStars(count, spread) {
+      const geometry = new THREE.BufferGeometry();
+      const positions = [];
+
+      for (let i = 0; i < count; i++) {
+        const x = (Math.random() - 0.5) * spread;
+        const y = (Math.random() - 0.5) * spread;
+        const z = (Math.random() - 0.5) * spread;
+        positions.push(x, y, z);
+      }
+
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      const material = new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: 0.3,
+        sizeAttenuation: true,
+        transparent: true,
+        opacity: 0.8,
+        depthWrite: false
+      });
+
+      const stars = new THREE.Points(geometry, material);
+      scene.add(stars);
+
+      // Star twinkling animation
+      function twinkle() {
+        gsap.to(material, {
+          opacity: Math.random() * 0.5 + 0.3,
+          duration: Math.random() * 2 + 1,
+          ease: "sine.inOut",
+          onComplete: twinkle
+        });
+      }
+
+      twinkle();
+    }
+    createStars(1000, 500);
+
+    // === Lighting Setup ===
+    const ambientLight = new THREE.AmbientLight(0x404040, 1.5); // soft light
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2); // sunlight-like
+    directionalLight.position.set(20, 10, 0);
+    directionalLight.castShadow = true;
+    scene.add(directionalLight);
+
+    const pointLight = new THREE.PointLight(0xffffaa, 2.5, 1000); // glowing sun light
+    pointLight.position.set(0, 0, 0);
+    pointLight.castShadow = true;
+    scene.add(pointLight);
+
+    // === Sun Setup ===
+    const sunGeometry = new THREE.SphereGeometry(2, 32, 32);
+    const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+    const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+    sun.layers.enable(1);
+    scene.add(sun);
+
+    // Sun glow sprite
+    const spriteMaterial = new THREE.SpriteMaterial({
+      map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/lensflare/lensflare0.png'),
+      color: 0xffff99,
+      transparent: true,
+      blending: THREE.AdditiveBlending
+    });
+    const sprite = new THREE.Sprite(spriteMaterial);
+    sprite.scale.set(10, 10, 1.0);
+    sun.add(sprite);
+
+    // === Orbit Helper Function ===
+    function createOrbit(distance) {
+      const orbitGeometry = new THREE.RingGeometry(distance - 0.05, distance + 0.05, 64);
+      const orbitMaterial = new THREE.MeshBasicMaterial({ color: 0x888888, side: THREE.DoubleSide });
+      const orbit = new THREE.Mesh(orbitGeometry, orbitMaterial);
+      orbit.rotation.x = Math.PI / 2;
+      scene.add(orbit);
+    }
+
+    // === Planets and Orbit Data ===
+    const textureLoader = new THREE.TextureLoader();
+    const planets = [];
+    const planetPivots = [];
+    const planetSpeeds = {};
+    const planetData = [
+      // name, orbitDistance, size, speed, textureURL
+       ["Mercury", 4, 0.3, 0.04, "https://upload.wikimedia.org/wikipedia/commons/4/4a/Mercury_in_true_color.jpg"],
+      ["Venus", 6, 0.5, 0.015, "https://upload.wikimedia.org/wikipedia/commons/e/e5/Venus-real_color.jpg"],
+      ["Earth", 8, 0.6, 0.01, "https://upload.wikimedia.org/wikipedia/commons/9/97/The_Earth_seen_from_Apollo_17.jpg"],
+      ["Mars", 10, 0.4, 0.008, "https://upload.wikimedia.org/wikipedia/commons/0/02/OSIRIS_Mars_true_color.jpg"],
+      ["Jupiter", 13, 1.2, 0.005, "https://upload.wikimedia.org/wikipedia/commons/e/e2/Jupiter.jpg"],
+      ["Saturn", 16, 1, 0.003, "https://upload.wikimedia.org/wikipedia/commons/c/c7/Saturn_during_Equinox.jpg"],
+      ["Uranus", 19, 0.9, 0.002, "https://upload.wikimedia.org/wikipedia/commons/3/3d/Uranus2.jpg"],
+      ["Neptune", 22, 0.8, 0.001, "https://upload.wikimedia.org/wikipedia/commons/5/56/Neptune_Full.jpg"]
+    ];
+
+    // === Create Planets ===
+    planetData.forEach(([name, distance, size, speed, textureURL]) => {
+      const texture = textureLoader.load(textureURL);
+      const material = new THREE.MeshStandardMaterial({ map: texture });
+      const geometry = new THREE.SphereGeometry(size, 32, 32);
+      const planet = new THREE.Mesh(geometry, material);
+      planet.name = name;
+      planet.castShadow = true;
+      planet.receiveShadow = true;
+
+      const pivot = new THREE.Object3D();
+      pivot.rotationSpeed = speed;
+      planet.position.set(distance, 0, 0);
+      pivot.add(planet);
+
+      // Saturn Rings
+      if (name === "Saturn") {
+        const ringGeometry = new THREE.RingGeometry(size * 1.2, size * 2, 64);
+        const ringMaterial = new THREE.MeshBasicMaterial({
+          map: textureLoader.load('Saturn ring texture URL'),
+          side: THREE.DoubleSide,
+          transparent: true
+        });
+        const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+        ring.rotation.x = Math.PI / 2;
+        planet.add(ring);
+      }
+
+      // Moon orbiting Earth
+      if (name === "Earth") {
+        const moonPivot = new THREE.Object3D();
+        const moonGeometry = new THREE.SphereGeometry(0.1, 16, 16);
+        const moonMaterial = new THREE.MeshStandardMaterial({ color: 0x999999 });
+        const moon = new THREE.Mesh(moonGeometry, moonMaterial);
+        moon.position.set(1, 0, 0);
+        moonPivot.add(moon);
+        planet.add(moonPivot);
+        planet.moonPivot = moonPivot;
+      }
+
+      scene.add(pivot);
+      planets.push(planet);
+      planetPivots.push(pivot);
+      planetSpeeds[name] = speed;
+      createOrbit(distance);
+
+      // === UI Control for Planet Speed ===
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = `
+        <label for="${name}">${name}: <span id="label-${name}">${speed.toFixed(3)}</span></label>
+        <input type="range" id="${name}" min="0" max="0.05" step="0.001" value="${speed}" />
+      `;
+      planetControlsDiv.appendChild(wrapper);
+
+      // Slider event listener
+      document.getElementById(name).addEventListener("input", (e) => {
+        const newSpeed = parseFloat(e.target.value);
+        pivot.rotationSpeed = newSpeed;
+        document.getElementById(`label-${name}`).textContent = newSpeed.toFixed(3);
+      });
+    });
+
+    // === Camera Initial Position ===
+    const defaultCameraPosition = new THREE.Vector3(0, 10, 30);
+    camera.position.copy(defaultCameraPosition);
+    let isPaused = false;
+    let isZoomedIn = false;
+    let zoomedTarget = null;
+
+    // === Pinch-to-Zoom (Touch Support) ===
+    let initialDistance = null;
+
+    function getTouchDistance(touches) {
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    window.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2) {
+        initialDistance = getTouchDistance(e.touches);
+      }
+    });
+
+    window.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 2 && initialDistance) {
+        const currentDistance = getTouchDistance(e.touches);
+        const delta = currentDistance - initialDistance;
+        camera.position.z -= delta * 0.01;
+        camera.position.z = Math.min(Math.max(camera.position.z, 5), 100);
+        initialDistance = currentDistance;
+        e.preventDefault();
+      }
+    });
+
+    window.addEventListener('touchend', () => {
+      initialDistance = null;
+    });
+
+    // === Double-click to Zoom on Planet ===
+    window.addEventListener('dblclick', (event) => {
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(planets);
+
+      if (intersects.length > 0) {
+        const planet = intersects[0].object;
+        const targetPos = new THREE.Vector3();
+        planet.getWorldPosition(targetPos);
+
+        if (!isZoomedIn || zoomedTarget !== planet) {
+          gsap.to(camera.position, {
+            x: targetPos.x,
+            y: targetPos.y + 2,
+            z: targetPos.z + 4,
+            duration: 1.5,
+            ease: "power2.inOut"
+          });
+          isZoomedIn = true;
+          zoomedTarget = planet;
+        } else {
+          gsap.to(camera.position, {
+            x: defaultCameraPosition.x,
+            y: defaultCameraPosition.y,
+            z: defaultCameraPosition.z,
+            duration: 1.5,
+            ease: "power2.inOut"
+          });
+          isZoomedIn = false;
+          zoomedTarget = null;
+        }
+      }
+    });
+
+    // === Tooltip Update on Mouse Move ===
+    window.addEventListener('mousemove', (event) => {
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(planets);
+
+      if (intersects.length > 0) {
+        tooltip.style.display = 'block';
+        tooltip.style.left = `${event.clientX + 5}px`;
+        tooltip.style.top = `${event.clientY + 5}px`;
+        tooltip.textContent = intersects[0].object.name;
+      } else {
+        tooltip.style.display = 'none';
+      }
+    });
+
+    // === Animation Loop ===
+    function animate() {
+      requestAnimationFrame(animate);
+      if (!isPaused) {
+        planetPivots.forEach((pivot, index) => {
+          pivot.rotation.y += pivot.rotationSpeed;
+          const planet = planets[index];
+          if (planet.moonPivot) {
+            planet.moonPivot.rotation.y += 0.05;
+          }
+        });
+      }
+      camera.lookAt(scene.position);
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // === Pause Button Listener ===
+    pauseButton.addEventListener("click", () => {
+      isPaused = !isPaused;
+      pauseButton.textContent = isPaused ? "Resume" : "Pause";
+    });
+
+    // === Responsive Resize Handling ===
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
