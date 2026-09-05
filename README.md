@@ -53,7 +53,7 @@ README.md        # You're reading it
 ##  How to Run
 
 1. **Clone or Download Repository**
-2. Open `Vaibhav Pandey.html` in any modern web browser (Chrome, Firefox, Edge, Safari)
+2. Open `Index.html` in any modern web browser (Chrome, Firefox, Edge, Safari)
 3. No build tools or servers needed (static file)
 
 ---
