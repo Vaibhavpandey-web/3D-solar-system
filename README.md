@@ -1,86 +1,57 @@
-# 3D Solar System Simulation
+<div align="center">
 
-A fully interactive, mobile-friendly 3D Solar System simulation built with [Three.js](https://threejs.org/) and [GSAP](https://greensock.com/gsap/). This simulation includes animated planets, orbit controls, a dynamic starfield, pause/resume functionality, tooltips, pinch-to-zoom (touch support), and zoom-on-double-click for planet focus.
+# 3D Solar System
 
-##  Features
+A browser-based experiment in planetary motion, WebGL rendering and interactive controls.
 
-- Realistic orbital motion for all 8 planets
-- Saturn's iconic rings and Earth's Moon
-- Interactive UI for adjusting planet speeds
-- Double-click to zoom in/out on planets
-- Mouse hover tooltips with planet names
-- Pinch-to-zoom support on mobile devices
-- Dynamic star background with twinkling effect
-- Touch and mouse input supported
-- Responsive layout for all screen sizes
+![JavaScript](https://img.shields.io/badge/JavaScript-111827?style=flat-square) ![Three.js](https://img.shields.io/badge/Three.js-111827?style=flat-square) ![GSAP](https://img.shields.io/badge/GSAP-111827?style=flat-square)
+
+</div>
 
 ---
 
-##  File Structure
+[Get started](#run-locally) · [Controls](#controls) · [Source](index.html)
 
+## Highlights
+
+- Sun and eight planets with animated orbital movement.
+- Per-planet speed sliders and pause/resume controls.
+- Hover labels, double-click camera transitions and touch pinch zoom.
+- Starfield, lighting, orbit paths, Moon and Saturn ring geometry.
+
+## Controls
+
+| Action | Interaction |
+| --- | --- |
+| Change orbital speed | Adjust a planet slider |
+| Pause planetary motion | Select Pause / Resume |
+| Identify a planet | Hover over it |
+| Move camera toward a planet | Double-click it |
+| Adjust zoom on touch devices | Pinch with two fingers |
+
+## Run locally
+
+```bash
+git clone https://github.com/Vaibhavpandey-web/3D-solar-system.git
+cd 3D-solar-system
+python -m http.server 8080
 ```
-Vaibhav Pandey.html       # Main HTML file (contains all logic and rendering)
-README.md        # You're reading it
-```
 
----
+Open [localhost:8080](http://localhost:8080). External libraries and assets require an internet connection.
 
-##  Technologies Used
+<details>
+<summary><strong>Implementation and limitations</strong></summary>
 
-- [Three.js](https://threejs.org/) — 3D engine for rendering and scene creation
-- [GSAP](https://greensock.com/gsap/) — Smooth animations
-- Vanilla JavaScript — App logic
-- HTML5 — Single-page application structure
+The scene and controls are contained in `index.html`. Libraries and most textures are loaded from external URLs. The Saturn ring texture still uses a placeholder URL and needs a real asset. Camera transitions currently continue to look at the scene origin.
 
----
+Planet sizes, distances and speeds are illustrative rather than scientifically to scale. This is an interactive graphics project, not an astronomical prediction tool.
 
-##  Mobile Controls
-
-- **Pinch to Zoom**: Zooms camera in/out using two-finger gesture
-- **Touch & Drag**: Not implemented (you can add OrbitControls or custom gestures)
-
----
-
-##  Desktop Controls
-
-- **Double-click on planet**: Zoom in or out
-- **Mouse hover**: Show planet name tooltip
-- **Use panel sliders**: Change planet orbit speeds
-- **Pause/Resume**: Toggle planetary motion
-
----
-
-##  How to Run
-
-1. **Clone or Download Repository**
-2. Open `Index.html` in any modern web browser (Chrome, Firefox, Edge, Safari)
-3. No build tools or servers needed (static file)
-
----
-
-##  Planets Included
-
-| Planet   | Texture Source | Orbit Radius | Size | Initial Speed  |
-|----------|----------------|--------------|------|----------------|
-| Mercury  | NASA/Wikipedia | 4            | 0.3  | 0.04           |
-| Venus    | NASA/Wikipedia | 6            | 0.5  | 0.015          |
-| Earth    | NASA/Apollo 17 | 8            | 0.6  | 0.01           |
-| Mars     | ESA/OSIRIS     | 10           | 0.4  | 0.008          |
-| Jupiter  | NASA           | 13           | 1.2  | 0.005          |
-| Saturn   | NASA/Cassini   | 16           | 1.0  | 0.003          |
-| Uranus   | Hubble         | 19           | 0.9  | 0.002          |
-| Neptune  | Hubble         | 22           | 0.8  | 0.001          |
-
----
+</details>
 
 ## Credits
 
-- Planet Textures: NASA, Wikimedia Commons, Three.js examples
-- Saturn's Rings: [Three.js Fundamentals](https://threejsfundamentals.org/)
-- Lens flare: Three.js built-in texture
+Planet imagery is referenced from Wikimedia Commons; the scene also references Three.js example assets. Consult the original asset sources for their individual attribution and reuse terms.
 
 ---
 
-##  Author
-
-Created by Vaibhav Pandey 
+Built by [Vaibhav Pandey](https://github.com/Vaibhavpandey-web) · [Portfolio](https://vaibhav-pandey-portfolio-henna.vercel.app/)
